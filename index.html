@@ -315,6 +315,12 @@
                             <span class="tooltiptext">Savings from lower interest minus the opportunity cost of investing the down payment.</span>
                         </div>
                     </div>
+                    <div class="metric">
+                        <span class="metric-label">Ideal Down Payment</span>
+                        <div class="metric-value tooltip" id="resultIdealDownPayment">$0.00
+                            <span class="tooltiptext">The down payment that maximizes cost-effectiveness, balancing interest savings and investment potential.</span>
+                        </div>
+                    </div>
                 </div>
             </div>
             <div class="card">
@@ -372,7 +378,7 @@
                 <h2>Investment vs Interest</h2>
                 <canvas id="investmentChart"></canvas>
             </div>
-            <div class="card">
+            <div class="card full-width">
                 <h2>Down Payment Trade-Off</h2>
                 <canvas id="downPaymentChart"></canvas>
             </div>
@@ -551,8 +557,8 @@
             // Calculate progress data for line graph
             const progressData = calculateProgressData(financedAmount, monthlyPayment, monthlyRate, loanTerm, investmentAmount, spReturn);
 
-            // Calculate down payment trade-off data
-            const downPaymentData = calculateDownPaymentTradeOff(loanPrice, apr, loanTerm, spReturn);
+            // Calculate down payment trade-off data and ideal down payment
+            const downPaymentData = calculateDownPaymentTradeOff(loanPrice, apr, loanTerm, spReturn, baselineMetrics.totalInterest);
 
             // Update results
             document.getElementById('resultLoanPrice').textContent = `$${loanPrice.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,')}`;
@@ -578,6 +584,10 @@
             const impactEl = document.getElementById('resultDownPaymentImpact');
             impactEl.textContent = `$${downPaymentImpact.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,')}`;
             impactEl.className = 'metric-value' + (downPaymentImpact >= 0 ? ' positive' : ' negative');
+
+            const idealEl = document.getElementById('resultIdealDownPayment');
+            idealEl.textContent = `$${downPaymentData.idealDownPayment.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,')} (Monthly: $${downPaymentData.idealMonthlyPayment.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,')})`;
+            idealEl.className = 'metric-value';
 
             // Update charts
             updateCharts(financedAmount, totalInterest, investmentAmount, investmentGain, progressData, downPaymentData);
@@ -615,11 +625,12 @@
             return { months, interestPaid, principalRemaining, investmentValues };
         }
 
-        function calculateDownPaymentTradeOff(loanPrice, apr, loanTerm, spReturn) {
+        function calculateDownPaymentTradeOff(loanPrice, apr, loanTerm, spReturn, baselineInterest) {
             const downPayments = [];
             const totalCosts = [];
             const investmentValues = [];
             const monthlyPayments = [];
+            const impacts = [];
             const maxDownPayment = loanPrice * 0.5; // Up to 50% of loan price
             const step = maxDownPayment / 5; // 6 data points
 
@@ -630,9 +641,25 @@
                 monthlyPayments.push(metrics.monthlyPayment);
                 const investmentValue = dp * Math.pow(1 + spReturn, loanTerm / 12);
                 investmentValues.push(investmentValue);
+                const interestSavings = baselineInterest - metrics.totalInterest;
+                const opportunityCost = investmentValue - dp;
+                const impact = interestSavings - opportunityCost;
+                impacts.push(impact);
             }
 
-            return { downPayments, totalCosts, investmentValues, monthlyPayments };
+            // Find ideal down payment (highest impact)
+            const idealIndex = impacts.indexOf(Math.max(...impacts));
+            const idealDownPayment = downPayments[idealIndex];
+            const idealMonthlyPayment = monthlyPayments[idealIndex];
+
+            return { 
+                downPayments, 
+                totalCosts, 
+                investmentValues, 
+                monthlyPayments, 
+                idealDownPayment, 
+                idealMonthlyPayment 
+            };
         }
 
         function updateCharts(financedAmount, totalInterest, investmentAmount, investmentGain, progressData, downPaymentData) {
@@ -756,6 +783,28 @@
                         legend: {
                             position: 'bottom',
                             labels: { color: '#e0e0e0' }
+                        },
+                        annotation: {
+                            annotations: {
+                                line1: {
+                                    type: 'line',
+                                    xMin: downPaymentData.downPayments.indexOf(downPaymentData.idealDownPayment),
+                                    xMax: downPaymentData.downPayments.indexOf(downPaymentData.idealDownPayment),
+                                    borderColor: '#ffffff',
+                                    borderWidth: 2,
+                                    borderDash: [5, 5],
+                                    label: {
+                                        content: `Ideal: $${downPaymentData.idealDownPayment.toFixed(0).replace(/\d(?=(\d{3})+$)/g, '$&,')} (Monthly: $${downPaymentData.idealMonthlyPayment.toFixed(2)})`,
+                                        enabled: true,
+                                        position: 'top',
+                                        backgroundColor: 'rgba(50, 50, 50, 0.9)',
+                                        color: '#e0e0e0',
+                                        font: { size: 12 },
+                                        padding: 8,
+                                        borderRadius: 8
+                                    }
+                                }
+                            }
                         }
                     },
                     scales: {
