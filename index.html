@@ -194,6 +194,10 @@
                     </select>
                 </div>
                 <div class="input-group">
+                    <label for="investmentAmount">Investment Amount ($)</label>
+                    <input type="number" id="investmentAmount" value="40000" min="0" step="100">
+                </div>
+                <div class="input-group">
                     <label for="spReturn">S&P 500 Expected Return (%)</label>
                     <input type="number" id="spReturn" value="7" min="0" step="0.1">
                 </div>
@@ -232,7 +236,7 @@
                     <div class="metric-value" id="resultSPRate">7.00%</div>
                 </div>
                 <div class="metric">
-                    <span class="metric-label">Amount Invested Instead</span>
+                    <span class="metric-label">Amount Invested</span>
                     <div class="metric-value" id="resultInvested">$40,000.00</div>
                 </div>
                 <div class="metric">
@@ -283,6 +287,7 @@
             let downPayment = parseFloat(document.getElementById('downPayment').value) || 0;
             const apr = parseFloat(document.getElementById('apr').value) / 100 || 0;
             const loanTerm = parseInt(document.getElementById('loanTerm').value) || 1;
+            const investmentAmount = parseFloat(document.getElementById('investmentAmount').value) || 0;
             const spReturn = parseFloat(document.getElementById('spReturn').value) / 100 || 0;
 
             // Convert down payment if in percent
@@ -292,6 +297,12 @@
 
             // Loan calculations
             const financedAmount = carPrice - downPayment;
+            // Update investment amount default if not manually changed
+            const investmentInput = document.getElementById('investmentAmount');
+            if (document.activeElement !== investmentInput) {
+                investmentInput.value = financedAmount;
+            }
+
             const monthlyRate = apr / 12;
             const monthlyPayment = financedAmount * (monthlyRate * Math.pow(1 + monthlyRate, loanTerm)) /
                 (Math.pow(1 + monthlyRate, loanTerm) - 1);
@@ -299,12 +310,12 @@
             const totalInterest = totalPaid - financedAmount;
 
             // Investment calculations
-            const investmentValue = downPayment * Math.pow(1 + spReturn, loanTerm / 12);
-            const investmentGain = investmentValue - downPayment;
+            const investmentValue = investmentAmount * Math.pow(1 + spReturn, loanTerm / 12);
+            const investmentGain = investmentValue - investmentAmount;
             const netBenefit = investmentGain - totalInterest;
 
             // Calculate progress data for line graph
-            const progressData = calculateProgressData(financedAmount, monthlyPayment, monthlyRate, loanTerm, downPayment, spReturn);
+            const progressData = calculateProgressData(financedAmount, monthlyPayment, monthlyRate, loanTerm, investmentAmount, spReturn);
 
             // Update results
             document.getElementById('resultCarPrice').textContent = `$${carPrice.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,')}`;
@@ -313,7 +324,7 @@
             document.getElementById('resultMonthly').textContent = `$${monthlyPayment.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,')}`;
             document.getElementById('resultInterest').textContent = `$${totalInterest.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,')}`;
             document.getElementById('resultSPRate').textContent = `${(spReturn * 100).toFixed(2)}%`;
-            document.getElementById('resultInvested').textContent = `$${downPayment.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,')}`;
+            document.getElementById('resultInvested').textContent = `$${investmentAmount.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,')}`;
             document.getElementById('resultInvestment').textContent = `$${investmentValue.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,')}`;
             
             // Apply color classes for investment metrics
@@ -326,10 +337,10 @@
             benefitEl.className = 'metric-value' + (netBenefit >= 0 ? ' positive' : ' negative');
 
             // Update charts
-            updateCharts(financedAmount, totalInterest, downPayment, investmentValue, progressData);
+            updateCharts(financedAmount, totalInterest, investmentAmount, investmentValue, progressData);
         }
 
-        function calculateProgressData(financedAmount, monthlyPayment, monthlyRate, loanTerm, downPayment, spReturn) {
+        function calculateProgressData(financedAmount, monthlyPayment, monthlyRate, loanTerm, investmentAmount, spReturn) {
             const interestPaid = [];
             const principalRemaining = [];
             const investmentValues = [];
@@ -352,7 +363,7 @@
                 principalRemaining.push(Math.max(0, remainingBalance));
 
                 // Investment growth
-                const investmentValue = downPayment * Math.pow(1 + spReturn, month / 12);
+                const investmentValue = investmentAmount * Math.pow(1 + spReturn, month / 12);
                 investmentValues.push(investmentValue);
 
                 if (remainingBalance <= 0) break;
@@ -361,7 +372,7 @@
             return { months, interestPaid, principalRemaining, investmentValues };
         }
 
-        function updateCharts(financedAmount, totalInterest, downPayment, investmentValue, progressData) {
+        function updateCharts(financedAmount, totalInterest, investmentAmount, investmentValue, progressData) {
             // Payment Breakdown Chart
             if (paymentChart) paymentChart.destroy();
             paymentChart = new Chart(document.getElementById('paymentChart'), {
@@ -393,7 +404,7 @@
                 data: {
                     labels: ['Interest Paid', 'Investment Gain'],
                     datasets: [{
-                        data: [totalInterest, investmentValue - downPayment],
+                        data: [totalInterest, investmentValue - investmentAmount],
                         backgroundColor: ['#e74c3c', '#2ecc71'],
                         borderColor: '#2a2a2a',
                         borderWidth: 2
