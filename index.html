@@ -342,6 +342,7 @@
         let downPaymentMode = 'dollar';
         let investmentGoal = 'interest';
         let customInvestmentSet = false;
+        let customMonthlyPaymentSet = false;
 
         function toggleDownPayment(mode) {
             downPaymentMode = mode;
@@ -358,6 +359,7 @@
             document.querySelectorAll('.investment-toggle button').forEach(btn => {
                 btn.classList.toggle('active', btn.textContent.includes(goal === 'interest' ? 'Interest' : 'Car'));
             });
+            customInvestmentSet = false; // Reset custom investment when changing goal
             calculate();
         }
 
@@ -365,7 +367,7 @@
             const carPrice = parseFloat(document.getElementById('carPrice').value) || 0;
             let downPayment = parseFloat(document.getElementById('downPayment').value) || 0;
             const apr = parseFloat(document.getElementById('apr').value) / 100 || 0;
-            let loanTerm = parseInt(document.getElementById('loanTerm').value) || 1;
+            let loanTerm = parseInt(document.getElementById('loanTerm').value) || 72;
             const desiredMonthlyPayment = parseFloat(document.getElementById('monthlyPayment').value) || 0;
             let investmentAmount = parseFloat(document.getElementById('investmentAmount').value) || 0;
             const spReturn = parseFloat(document.getElementById('spReturn').value) / 100 || 0;
@@ -377,28 +379,39 @@
 
             // Loan calculations
             const financedAmount = carPrice - downPayment;
-
-            // Adjust loan term based on desired monthly payment
-            let monthlyPayment;
             const monthlyRate = apr / 12;
-            if (desiredMonthlyPayment > 0) {
-                // Calculate required loan term to achieve desired monthly payment
+
+            // Available loan terms
+            const availableTerms = [12, 24, 36, 48, 60, 72];
+
+            // Calculate monthly payment or adjust loan term
+            let monthlyPayment;
+            if (customMonthlyPaymentSet && desiredMonthlyPayment > 0) {
+                // Calculate required loan term for desired monthly payment
                 const termNumerator = Math.log(desiredMonthlyPayment / (desiredMonthlyPayment - financedAmount * monthlyRate));
                 const termDenominator = Math.log(1 + monthlyRate);
-                loanTerm = Math.ceil(termNumerator / termDenominator);
-                // Update loan term select
-                document.getElementById('loanTerm').value = Math.min(loanTerm, 72);
+                const calculatedTerm = Math.ceil(termNumerator / termDenominator);
+                
+                // Find closest available term
+                loanTerm = availableTerms.reduce((prev, curr) => 
+                    Math.abs(curr - calculatedTerm) < Math.abs(prev - calculatedTerm) ? curr : prev
+                );
                 monthlyPayment = desiredMonthlyPayment;
             } else {
+                // Calculate monthly payment based on selected term and APR
                 monthlyPayment = financedAmount * (monthlyRate * Math.pow(1 + monthlyRate, loanTerm)) /
                     (Math.pow(1 + monthlyRate, loanTerm) - 1);
             }
 
-            // Update monthly payment input if not manually set
+            // Update inputs
             const monthlyPaymentInput = document.getElementById('monthlyPayment');
-            if (document.activeElement !== monthlyPaymentInput) {
+            if (!customMonthlyPaymentSet) {
                 monthlyPaymentInput.value = monthlyPayment.toFixed(2);
             }
+            monthlyPaymentInput.onchange = () => { customMonthlyPaymentSet = true; };
+
+            // Update loan term select
+            document.getElementById('loanTerm').value = loanTerm;
 
             const totalPaid = monthlyPayment * loanTerm;
             const totalInterest = totalPaid - financedAmount;
