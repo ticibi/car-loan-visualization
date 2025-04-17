@@ -13,7 +13,7 @@
         }
 
         body {
-            background: #1a1a1a;
+            background: #121212;
             color: #e0e0e0;
             min-height: 100vh;
             padding: 2rem;
@@ -28,13 +28,18 @@
             text-align: center;
             margin-bottom: 2rem;
             color: #ffffff;
+            font-weight: 700;
+            font-size: 2rem;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
         }
 
         .input-section {
-            background: #2a2a2a;
+            background: rgba(30, 30, 30, 0.7);
+            backdrop-filter: blur(10px);
             padding: 2rem;
-            border-radius: 12px;
+            border-radius: 16px;
             margin-bottom: 2rem;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
         }
 
         .input-grid {
@@ -53,20 +58,22 @@
             margin-bottom: 0.5rem;
             font-size: 0.9rem;
             color: #b0b0b0;
+            font-weight: 500;
         }
 
         input, select {
             padding: 0.75rem;
-            background: #3a3a3a;
+            background: rgba(50, 50, 50, 0.7);
             border: none;
-            border-radius: 8px;
+            border-radius: 12px;
             color: #e0e0e0;
             font-size: 1rem;
+            transition: box-shadow 0.2s;
         }
 
         input:focus, select:focus {
             outline: none;
-            box-shadow: 0 0 0 2px #4a90e2;
+            box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.5);
         }
 
         .downpayment-toggle, .investment-toggle {
@@ -78,31 +85,35 @@
         .downpayment-toggle button, .investment-toggle button {
             flex: 1;
             padding: 0.5rem;
-            background: #3a3a3a;
+            background: rgba(50, 50, 50, 0.7);
             border: none;
-            border-radius: 6px;
+            border-radius: 8px;
             color: #e0e0e0;
             cursor: pointer;
             font-size: 0.9rem;
-        }
-
-        .downpayment-toggle button.active, .investment-toggle button.active {
-            background: #4a90e2;
-        }
-
-        button.calculate {
-            background: #4a90e2;
-            border: none;
-            padding: 0.75rem 1.5rem;
-            border-radius: 8px;
-            color: white;
-            cursor: pointer;
-            font-size: 1rem;
             transition: background 0.2s;
         }
 
+        .downpayment-toggle button.active, .investment-toggle button.active {
+            background: linear-gradient(135deg, #4a90e2, #357abd);
+        }
+
+        button.calculate {
+            background: linear-gradient(135deg, #4a90e2, #357abd);
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 12px;
+            color: white;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
         button.calculate:hover {
-            background: #357abd;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
         }
 
         .results-section {
@@ -112,9 +123,11 @@
         }
 
         .card {
-            background: #2a2a2a;
+            background: rgba(30, 30, 30, 0.7);
+            backdrop-filter: blur(10px);
             padding: 1.5rem;
-            border-radius: 12px;
+            border-radius: 16px;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
         }
 
         .card.full-width {
@@ -138,12 +151,12 @@
             grid-template-columns: 1fr auto;
             align-items: center;
             padding: 0.5rem 0.75rem;
-            border-radius: 6px;
+            border-radius: 8px;
             transition: background 0.2s;
         }
 
         .metric:hover {
-            background: #343434;
+            background: rgba(50, 50, 50, 0.5);
         }
 
         .metric-label {
@@ -174,11 +187,12 @@
         .tooltip .tooltiptext {
             visibility: hidden;
             width: 220px;
-            background-color: #3a3a3a;
+            background: rgba(50, 50, 50, 0.9);
+            backdrop-filter: blur(8px);
             color: #e0e0e0;
             text-align: left;
-            border-radius: 8px;
-            padding: 10px;
+            border-radius: 12px;
+            padding: 12px;
             position: absolute;
             z-index: 1;
             bottom: 130%;
@@ -186,7 +200,7 @@
             opacity: 0;
             transition: opacity 0.3s;
             font-size: 0.8rem;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
         }
 
         .tooltip:hover .tooltiptext {
@@ -196,7 +210,9 @@
 
         canvas {
             max-width: 100%;
-            border-radius: 8px;
+            border-radius: 12px;
+            background: rgba(20, 20, 20, 0.5);
+            padding: 1rem;
         }
 
         @media (max-width: 768px) {
@@ -248,7 +264,7 @@
                     <input type="number" id="investmentAmount" value="40000" min="0" step="100">
                     <div class="investment-toggle">
                         <button class="active" onclick="toggleInvestmentGoal('interest')">Offset Interest</button>
-                        <button onclick="toggleInvestmentGoal('car')">Pay Off Car</button>
+                        <button onclick="toggleInvestmentGoal('car')">Pay Off Loan</button>
                     </div>
                 </div>
                 <div class="input-group">
@@ -291,6 +307,12 @@
                         <span class="metric-label">Total Interest Paid</span>
                         <div class="metric-value tooltip" id="resultInterest">$7,053.11
                             <span class="tooltiptext">The total interest paid over the life of the loan.</span>
+                        </div>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Down Payment Impact</span>
+                        <div class="metric-value tooltip" id="resultDownPaymentImpact">$0.00
+                            <span class="tooltiptext">Savings from lower interest minus the opportunity cost of investing the down payment.</span>
                         </div>
                     </div>
                 </div>
@@ -350,6 +372,10 @@
                 <h2>Investment vs Interest</h2>
                 <canvas id="investmentChart"></canvas>
             </div>
+            <div class="card">
+                <h2>Down Payment Trade-Off</h2>
+                <canvas id="downPaymentChart"></canvas>
+            </div>
             <div class="card full-width">
                 <h2>Loan Progress Over Time</h2>
                 <canvas id="progressChart"></canvas>
@@ -359,7 +385,7 @@
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
-        let paymentChart, investmentChart, progressChart;
+        let paymentChart, investmentChart, downPaymentChart, progressChart;
         let downPaymentMode = 'dollar';
         let investmentGoal = 'interest';
         let customInvestmentSet = false;
@@ -385,6 +411,16 @@
             calculate();
         }
 
+        function calculateLoanMetrics(loanPrice, downPayment, apr, loanTerm) {
+            const monthlyRate = apr / 12;
+            const financedAmount = loanPrice - downPayment;
+            const monthlyPayment = financedAmount * (monthlyRate * Math.pow(1 + monthlyRate, loanTerm)) /
+                (Math.pow(1 + monthlyRate, loanTerm) - 1);
+            const totalPaid = monthlyPayment * loanTerm;
+            const totalInterest = totalPaid - financedAmount;
+            return { financedAmount, monthlyPayment, totalInterest, totalPaid };
+        }
+
         function calculate() {
             const loanPriceInput = document.getElementById('loanPrice');
             let loanPrice = parseFloat(loanPriceInput.value) || 0;
@@ -402,8 +438,8 @@
             }
 
             // Loan calculations
-            const financedAmount = loanPrice - downPayment;
             const monthlyRate = apr / 12;
+            let financedAmount = loanPrice - downPayment;
 
             // Available loan terms
             const availableTerms = [12, 24, 36, 48, 60, 72];
@@ -413,8 +449,8 @@
             if (customMonthlyPaymentSet && desiredMonthlyPayment > 0) {
                 // Calculate financed amount needed for desired monthly payment
                 const paymentFactor = (monthlyRate * Math.pow(1 + monthlyRate, loanTerm)) / (Math.pow(1 + monthlyRate, loanTerm) - 1);
-                const newFinancedAmount = desiredMonthlyPayment / paymentFactor;
-                loanPrice = newFinancedAmount + downPayment;
+                financedAmount = desiredMonthlyPayment / paymentFactor;
+                loanPrice = financedAmount + downPayment;
                 
                 // Update loan price input if not manually set
                 if (!customLoanPriceSet) {
@@ -480,6 +516,14 @@
             const totalPaid = monthlyPayment * loanTerm;
             const totalInterest = totalPaid - financedAmount;
 
+            // Down payment impact calculation
+            const baselineDownPayment = 0; // Compare against no down payment
+            const baselineMetrics = calculateLoanMetrics(loanPrice, baselineDownPayment, apr, loanTerm);
+            const interestSavings = baselineMetrics.totalInterest - totalInterest;
+            const extraDownPayment = downPayment - baselineDownPayment;
+            const opportunityCost = extraDownPayment * Math.pow(1 + spReturn, loanTerm / 12) - extraDownPayment;
+            const downPaymentImpact = interestSavings - opportunityCost;
+
             // Update investment amount based on goal if not manually set
             const investmentInput = document.getElementById('investmentAmount');
             if (!customInvestmentSet) {
@@ -507,6 +551,9 @@
             // Calculate progress data for line graph
             const progressData = calculateProgressData(financedAmount, monthlyPayment, monthlyRate, loanTerm, investmentAmount, spReturn);
 
+            // Calculate down payment trade-off data
+            const downPaymentData = calculateDownPaymentTradeOff(loanPrice, apr, loanTerm, spReturn);
+
             // Update results
             document.getElementById('resultLoanPrice').textContent = `$${loanPrice.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,')}`;
             document.getElementById('resultDownPayment').textContent = `$${downPayment.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,')}`;
@@ -528,8 +575,12 @@
             benefitEl.textContent = `$${netBenefit.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,')}`;
             benefitEl.className = 'metric-value' + (netBenefit >= 0 ? ' positive' : ' negative');
 
+            const impactEl = document.getElementById('resultDownPaymentImpact');
+            impactEl.textContent = `$${downPaymentImpact.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,')}`;
+            impactEl.className = 'metric-value' + (downPaymentImpact >= 0 ? ' positive' : ' negative');
+
             // Update charts
-            updateCharts(financedAmount, totalInterest, investmentAmount, investmentGain, progressData);
+            updateCharts(financedAmount, totalInterest, investmentAmount, investmentGain, progressData, downPaymentData);
         }
 
         function calculateProgressData(financedAmount, monthlyPayment, monthlyRate, loanTerm, investmentAmount, spReturn) {
@@ -564,7 +615,27 @@
             return { months, interestPaid, principalRemaining, investmentValues };
         }
 
-        function updateCharts(financedAmount, totalInterest, investmentAmount, investmentGain, progressData) {
+        function calculateDownPaymentTradeOff(loanPrice, apr, loanTerm, spReturn) {
+            const downPayments = [];
+            const totalCosts = [];
+            const investmentValues = [];
+            const monthlyPayments = [];
+            const maxDownPayment = loanPrice * 0.5; // Up to 50% of loan price
+            const step = maxDownPayment / 5; // 6 data points
+
+            for (let dp = 0; dp <= maxDownPayment; dp += step) {
+                const metrics = calculateLoanMetrics(loanPrice, dp, apr, loanTerm);
+                downPayments.push(dp);
+                totalCosts.push(metrics.totalPaid);
+                monthlyPayments.push(metrics.monthlyPayment);
+                const investmentValue = dp * Math.pow(1 + spReturn, loanTerm / 12);
+                investmentValues.push(investmentValue);
+            }
+
+            return { downPayments, totalCosts, investmentValues, monthlyPayments };
+        }
+
+        function updateCharts(financedAmount, totalInterest, investmentAmount, investmentGain, progressData, downPaymentData) {
             // Payment Breakdown Chart
             if (paymentChart) paymentChart.destroy();
             paymentChart = new Chart(document.getElementById('paymentChart'), {
@@ -638,6 +709,84 @@
                             grid: { display: false },
                             ticks: { color: '#e0e0e0' },
                             stacked: true
+                        }
+                    }
+                }
+            });
+
+            // Down Payment Trade-Off Chart
+            if (downPaymentChart) downPaymentChart.destroy();
+            downPaymentChart = new Chart(document.getElementById('downPaymentChart'), {
+                type: 'line',
+                data: {
+                    labels: downPaymentData.downPayments.map(dp => `$${dp.toFixed(0).replace(/\d(?=(\d{3})+$)/g, '$&,')}`),
+                    datasets: [
+                        {
+                            label: 'Total Loan Cost',
+                            data: downPaymentData.totalCosts,
+                            borderColor: '#e74c3c',
+                            backgroundColor: '#e74c3c',
+                            fill: false,
+                            tension: 0.1,
+                            yAxisID: 'y'
+                        },
+                        {
+                            label: 'Investment Value',
+                            data: downPaymentData.investmentValues,
+                            borderColor: '#2ecc71',
+                            backgroundColor: '#2ecc71',
+                            fill: false,
+                            tension: 0.1,
+                            yAxisID: 'y'
+                        },
+                        {
+                            label: 'Monthly Payment',
+                            data: downPaymentData.monthlyPayments,
+                            borderColor: '#4a90e2',
+                            backgroundColor: '#4a90e2',
+                            fill: false,
+                            tension: 0.1,
+                            yAxisID: 'y1'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: { color: '#e0e0e0' }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: { color: '#3a3a3a' },
+                            ticks: { color: '#e0e0e0' },
+                            title: {
+                                display: true,
+                                text: 'Cost / Investment ($)',
+                                color: '#e0e0e0'
+                            }
+                        },
+                        y1: {
+                            position: 'right',
+                            grid: { display: false },
+                            ticks: { color: '#4a90e2' },
+                            title: {
+                                display: true,
+                                text: 'Monthly Payment ($)',
+                                color: '#4a90e2'
+                            }
+                        },
+                        x: {
+                            grid: { display: false },
+                            ticks: { color: '#e0e0e0' },
+                            title: {
+                                display: true,
+                                text: 'Down Payment ($)',
+                                color: '#e0e0e0'
+                            }
                         }
                     }
                 }
