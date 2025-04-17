@@ -122,23 +122,40 @@
         }
 
         .card h2 {
-            margin-bottom: 1rem;
+            margin-bottom: 1.5rem;
             color: #ffffff;
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+
+        .metric-grid {
+            display: grid;
+            gap: 0.75rem;
         }
 
         .metric {
-            margin-bottom: 0.75rem;
-            position: relative;
+            display: grid;
+            grid-template-columns: 1fr auto;
+            align-items: center;
+            padding: 0.5rem 0.75rem;
+            border-radius: 6px;
+            transition: background 0.2s;
+        }
+
+        .metric:hover {
+            background: #343434;
         }
 
         .metric-label {
             color: #b0b0b0;
             font-size: 0.9rem;
+            font-weight: 400;
         }
 
         .metric-value {
-            font-size: 1.2rem;
+            font-size: 1.1rem;
             font-weight: 500;
+            text-align: right;
         }
 
         .metric-value.positive {
@@ -156,20 +173,20 @@
 
         .tooltip .tooltiptext {
             visibility: hidden;
-            width: 200px;
+            width: 220px;
             background-color: #3a3a3a;
             color: #e0e0e0;
-            text-align: center;
-            border-radius: 6px;
-            padding: 8px;
+            text-align: left;
+            border-radius: 8px;
+            padding: 10px;
             position: absolute;
             z-index: 1;
-            bottom: 125%;
-            left: 50%;
-            margin-left: -100px;
+            bottom: 130%;
+            right: 0;
             opacity: 0;
             transition: opacity 0.3s;
             font-size: 0.8rem;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
         }
 
         .tooltip:hover .tooltiptext {
@@ -245,79 +262,83 @@
         <div class="results-section">
             <div class="card">
                 <h2>Loan Details</h2>
-                <div class="metric">
-                    <span class="metric-label">Car Price</span>
-                    <div class="metric-value tooltip" id="resultCarPrice">$50,000.00
-                        <span class="tooltiptext">The total price of the car before any down payment.</span>
+                <div class="metric-grid">
+                    <div class="metric">
+                        <span class="metric-label">Car Price</span>
+                        <div class="metric-value tooltip" id="resultCarPrice">$50,000.00
+                            <span class="tooltiptext">The total price of the car before any down payment.</span>
+                        </div>
                     </div>
-                </div>
-                <div class="metric">
-                    <span class="metric-label">Down Payment</span>
-                    <div class="metric-value tooltip" id="resultDownPayment">$10,000.00
-                        <span class="tooltiptext">The initial payment made towards the car price.</span>
+                    <div class="metric">
+                        <span class="metric-label">Down Payment</span>
+                        <div class="metric-value tooltip" id="resultDownPayment">$10,000.00
+                            <span class="tooltiptext">The initial payment made towards the car price.</span>
+                        </div>
                     </div>
-                </div>
-                <div class="metric">
-                    <span class="metric-label">Financed Amount</span>
-                    <div class="metric-value tooltip" id="resultFinanced">$40,000.00
-                        <span class="tooltiptext">The portion of the car price that is financed through the loan.</span>
+                    <div class="metric">
+                        <span class="metric-label">Financed Amount</span>
+                        <div class="metric-value tooltip" id="resultFinanced">$40,000.00
+                            <span class="tooltiptext">The portion of the car price that is financed through the loan.</span>
+                        </div>
                     </div>
-                </div>
-                <div class="metric">
-                    <span class="metric-label">Monthly Payment</span>
-                    <div class="metric-value tooltip" id="resultMonthly">$653.52
-                        <span class="tooltiptext">The monthly payment amount for the loan.</span>
+                    <div class="metric">
+                        <span class="metric-label">Monthly Payment</span>
+                        <div class="metric-value tooltip" id="resultMonthly">$653.52
+                            <span class="tooltiptext">The monthly payment amount for the loan.</span>
+                        </div>
                     </div>
-                </div>
-                <div class="metric">
-                    <span class="metric-label">Total Interest Paid</span>
-                    <div class="metric-value tooltip" id="resultInterest">$7,053.11
-                        <span class="tooltiptext">The total interest paid over the life of the loan.</span>
+                    <div class="metric">
+                        <span class="metric-label">Total Interest Paid</span>
+                        <div class="metric-value tooltip" id="resultInterest">$7,053.11
+                            <span class="tooltiptext">The total interest paid over the life of the loan.</span>
+                        </div>
                     </div>
                 </div>
             </div>
             <div class="card">
                 <h2>Investment Analysis</h2>
-                <div class="metric">
-                    <span class="metric-label">S&P 500 Return Rate</span>
-                    <div class="metric-value tooltip" id="resultSPRate">7.00%
-                        <span class="tooltiptext">The expected annual return rate of the S&P 500 investment.</span>
+                <div class="metric-grid">
+                    <div class="metric">
+                        <span class="metric-label">S&P 500 Return Rate</span>
+                        <div class="metric-value tooltip" id="resultSPRate">7.00%
+                            <span class="tooltiptext">The expected annual return rate of the S&P 500 investment.</span>
+                        </div>
                     </div>
-                </div>
-                <div class="metric">
-                    <span class="metric-label">Amount Invested</span>
-                    <div class="metric-value tooltip" id="resultInvested">$40,000.00
-                        <span class="tooltiptext">The initial amount invested in the S&P 500.</span>
+                    <div class="metric">
+                        <span class="metric-label">Amount Invested</span>
+                        <div class="metric-value tooltip" id="resultInvested">$40,000.00
+                            <span class="tooltiptext">The initial amount invested in the S&P 500.</span>
+                        </div>
                     </div>
-                </div>
-                <div class="metric">
-                    <span class="metric-label">Investment Value After Term</span>
-                    <div class="metric-value tooltip" id="resultInvestment">$59,609.83
-                        <span class="tooltiptext">The value of the investment at the end of the loan term.</span>
+                    <div class="metric">
+                        <span class="metric-label">Investment Value After Term</span>
+                        <div class="metric-value tooltip" id="resultInvestment">$59,609.83
+                            <span class="tooltiptext">The value of the investment at the end of the loan term.</span>
+                        </div>
                     </div>
-                </div>
-                <div class="metric">
-                    <span class="metric-label">Investment Gain</span>
-                    <div class="metric-value tooltip" id="resultGain">$19,609.83
-                        <span class="tooltiptext">The profit from the investment after the loan term.</span>
+                    <div class="metric">
+                        <span class="metric-label">Investment Gain</span>
+                        <div class="metric-value tooltip" id="resultGain">$19,609.83
+                            <span class="tooltiptext">The profit from the investment after the loan term.</span>
+                        </div>
                     </div>
-                </div>
-                <div class="metric">
-                    <span class="metric-label">Net Benefit of Financing</span>
-                    <div class="metric-value tooltip" id="resultBenefit">$12,556.72
-                        <span class="tooltiptext">Investment gain minus the total interest paid (or car price if paying off car).</span>
+                    <div class="metric">
+                        <span class="metric-label">Net Benefit of Financing</span>
+                        <div class="metric-value tooltip" id="resultBenefit">$12,556.72
+                            <span class="tooltiptext">Investment gain minus the total interest paid (or car price if paying off car).</span>
+                        </div>
                     </div>
-                </div>
-                <div class="metric">
-                    <span class="metric-label">Initial Investment to Offset</span>
-                    <div class="metric-value tooltip" id="resultOffsetInitial">$4,735.71
-                        <span class="tooltiptext">The initial amount needed to invest to offset the interest (or car price).</span>
+                    <div class="metric">
+                        <span class="metric-label">Initial Investment to Offset</span>
+                        <div class="metric-value tooltip" id="resultOffsetInitial">$4,735.71
+                            <span class="tooltiptext">The initial amount needed to invest to offset the interest (or car price).</span>
+                        </div>
                     </div>
-                </div>
-                <div class="metric">
-                    <span class="metric-label">Monthly Investment to Offset</span>
-                    <div class="metric-value tooltip" id="resultOffsetMonthly">$78.44
-                        <span class="tooltiptext">The monthly amount needed to invest to offset the interest (or car price).</span>
+                    <div class="metric">
+                        <span class="metric-label">Monthly Investment to Offset</span>
+                        <div class="metric-value tooltip" id="resultOffsetMonthly">$78.44
+                            <span class="tooltiptext">The monthly amount needed to invest to offset the interest (or car price).</span>
+                        </div>
                     </div>
                 </div>
             </div>
