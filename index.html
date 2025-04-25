@@ -460,6 +460,10 @@
                 <canvas id="termChart"></canvas>
             </div>
             <div class="card full-width">
+                <h2>Total Interest Paid vs. Loan Term and APR</h2>
+                <canvas id="interestChart"></canvas>
+            </div>
+            <div class="card full-width">
                 <h2>Loan Progress Over Time</h2>
                 <canvas id="progressChart"></canvas>
             </div>
@@ -469,7 +473,7 @@
     <script>
         Chart.register(ChartDataLabels);
 
-        let paymentChart, investmentChart, downPaymentChart, aprChart, termChart, progressChart;
+        let paymentChart, investmentChart, downPaymentChart, aprChart, termChart, interestChart, progressChart;
         let downPaymentMode = 'dollar';
         let investmentGoal = 'interest';
         let customInvestmentSet = false;
@@ -650,9 +654,10 @@
             const progressData = calculateProgressData(financedAmount, monthlyPayment, monthlyRate, loanTerm, investmentAmount, spReturn);
             const downPaymentData = calculateDownPaymentTradeOff(totalLoanPrice, apr, loanTerm, spReturn, baselineMetrics);
 
-            // APR and Term data
+            // APR, Term, and Interest data
             const aprData = calculateAPRData(totalLoanPrice, downPayment, loanTerm);
             const termData = calculateTermData(totalLoanPrice, downPayment, apr);
+            const interestData = calculateInterestData(totalLoanPrice, downPayment, apr, loanTerm);
 
             // Update results
             document.getElementById('resultLoanPrice').textContent = `$${totalLoanPrice.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,')}`;
@@ -682,7 +687,7 @@
             idealEl.textContent = `$${downPaymentData.idealDownPayment.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,')} (Monthly: $${downPaymentData.idealMonthlyPayment.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,')})`;
             idealEl.className = 'metric-value';
 
-            updateCharts(financedAmount, totalInterest, investmentAmount, investmentGain, progressData, downPaymentData, aprData, termData);
+            updateCharts(financedAmount, totalInterest, investmentAmount, investmentGain, progressData, downPaymentData, aprData, termData, interestData);
         }
 
         function calculateProgressData(financedAmount, monthlyPayment, monthlyRate, loanTerm, investmentAmount, spReturn) {
@@ -761,7 +766,7 @@
         function calculateAPRData(totalLoanPrice, downPayment, loanTerm) {
             const aprs = [];
             const payments = [];
-            for (let apr = 0; apr <= 10; apr += 0.5) {
+            for (let apr = 0.5; apr <= 10; apr += 0.5) { // Start at 0.5% to remove 0% APR
                 const monthlyRate = (apr / 100) / 12;
                 const financedAmount = totalLoanPrice - downPayment;
                 const monthlyPayment = financedAmount * (monthlyRate * Math.pow(1 + monthlyRate, loanTerm)) /
@@ -785,7 +790,37 @@
             return { terms, payments };
         }
 
-        function updateCharts(financedAmount, totalInterest, investmentAmount, investmentGain, progressData, downPaymentData, aprData, termData) {
+        function calculateInterestData(totalLoanPrice, downPayment, apr, loanTerm) {
+            // Interest vs. Term (fixed APR)
+            const terms = [12, 24, 36, 48, 60, 72, 84];
+            const interestVsTerm = [];
+            const monthlyRate = apr / 12;
+            const financedAmount = totalLoanPrice - downPayment;
+            for (let term of terms) {
+                const monthlyPayment = financedAmount * (monthlyRate * Math.pow(1 + monthlyRate, term)) /
+                    (Math.pow(1 + monthlyRate, term) - 1) || 0;
+                const totalPaid = monthlyPayment * term;
+                const totalInterest = totalPaid - financedAmount;
+                interestVsTerm.push(totalInterest);
+            }
+
+            // Interest vs. APR (fixed term)
+            const aprs = [];
+            const interestVsAPR = [];
+            for (let aprPercent = 0.5; aprPercent <= 10; aprPercent += 0.5) {
+                const monthlyRateAPR = (aprPercent / 100) / 12;
+                const monthlyPayment = financedAmount * (monthlyRateAPR * Math.pow(1 + monthlyRateAPR, loanTerm)) /
+                    (Math.pow(1 + monthlyRateAPR, loanTerm) - 1) || 0;
+                const totalPaid = monthlyPayment * loanTerm;
+                const totalInterest = totalPaid - financedAmount;
+                aprs.push(aprPercent);
+                interestVsAPR.push(totalInterest);
+            }
+
+            return { terms, interestVsTerm, aprs, interestVsAPR };
+        }
+
+        function updateCharts(financedAmount, totalInterest, investmentAmount, investmentGain, progressData, downPaymentData, aprData, termData, interestData) {
             if (paymentChart) paymentChart.destroy();
             paymentChart = new Chart(document.getElementById('paymentChart'), {
                 type: 'pie',
@@ -1033,6 +1068,78 @@
                             grid: { display: false },
                             ticks: { color: '#e0e0e0' },
                             title: { display: true, text: 'Loan Term (Months)', color: '#e0e0e0' }
+                        }
+                    }
+                }
+            });
+
+            if (interestChart) interestChart.destroy();
+            interestChart = new Chart(document.getElementById('interestChart'), {
+                type: 'line',
+                data: {
+                    labels: interestData.terms.map((_, i) => `${interestData.terms[i]} mo / ${interestData.aprs[i]}%`),
+                    datasets: [
+                        {
+                            label: `Interest vs. Term (at ${(parseFloat(document.getElementById('apr').value) || 5.5).toFixed(1)}% APR)`,
+                            data: interestData.interestVsTerm,
+                            borderColor: '#e74c3c',
+                            backgroundColor: '#e74c3c',
+                            pointBackgroundColor: interestData.terms.map(term => term === parseInt(document.getElementById('loanTerm').value) ? '#00f7ff' : '#e74c3c'),
+                            pointBorderColor: interestData.terms.map(term => term === parseInt(document.getElementById('loanTerm').value) ? '#00f7ff' : '#e74c3c'),
+                            pointRadius: interestData.terms.map(term => term === parseInt(document.getElementById('loanTerm').value) ? 6 : 3),
+                            fill: false,
+                            tension: 0.1
+                        },
+                        {
+                            label: `Interest vs. APR (at ${(parseInt(document.getElementById('loanTerm').value) || 72)} months)`,
+                            data: interestData.interestVsAPR,
+                            borderColor: '#f39c12',
+                            backgroundColor: '#f39c12',
+                            pointBackgroundColor: interestData.aprs.map(apr => apr === parseFloat(document.getElementById('apr').value) ? '#00f7ff' : '#f39c12'),
+                            pointBorderColor: interestData.aprs.map(apr => apr === parseFloat(document.getElementById('apr').value) ? '#00f7ff' : '#f39c12'),
+                            pointRadius: interestData.aprs.map(apr => apr === parseFloat(document.getElementById('apr').value) ? 6 : 3),
+                            fill: false,
+                            tension: 0.1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { position: 'top', labels: { color: '#e0e0e0' } },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const datasetLabel = context.dataset.label;
+                                    if (datasetLabel.includes('Term')) {
+                                        const index = context.dataIndex;
+                                        const term = interestData.terms[index];
+                                        const interest = interestData.interestVsTerm[index];
+                                        return `Term: ${term} months, Interest Paid: $${interest.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,')}`;
+                                    } else {
+                                        const index = context.dataIndex;
+                                        const apr = interestData.aprs[index];
+                                        const interest = interestData.interestVsAPR[index];
+                                        return `APR: ${apr.toFixed(1)}%, Interest Paid: $${interest.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,')}`;
+                                    }
+                                }
+                            }
+                        },
+                        datalabels: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: { color: '#3a3a3a' },
+                            ticks: { color: '#e0e0e0' },
+                            title: { display: true, text: 'Total Interest Paid ($)', color: '#e0e0e0' }
+                        },
+                        x: {
+                            grid: { display: false },
+                            ticks: { color: '#e0e0e0' },
+                            title: { display: true, text: 'Loan Term (Months) / APR (%)', color: '#e0e0e0' }
                         }
                     }
                 }
