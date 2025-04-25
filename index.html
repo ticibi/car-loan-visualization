@@ -209,12 +209,33 @@
             text-align: right;
         }
 
+        .metric-value.base-payment {
+            color: #00f7ff;
+        }
+
+        .metric-value.addon {
+            color: #f39c12;
+        }
+
+        .metric-value.total-payment {
+            color: #ffffff;
+            font-weight: 600;
+        }
+
         .metric-value.down-payment {
             color: #00f7ff;
         }
 
         .metric-value.interest-paid {
             color: #e74c3c;
+        }
+
+        .metric-value.initial-interest {
+            color: #e74c3c;
+        }
+
+        .metric-value.initial-principal {
+            color: #4a90e2;
         }
 
         .metric-value.positive {
@@ -439,6 +460,10 @@
                 </div>
             </div>
             <div class="card">
+                <h2>Monthly Payment Breakdown</h2>
+                <div class="metric-grid" id="monthlyBreakdown"></div>
+            </div>
+            <div class="card">
                 <h2>Payment Breakdown</h2>
                 <canvas id="paymentChart"></canvas>
             </div>
@@ -498,11 +523,16 @@
         }
 
         function getAdditionalCosts() {
-            const costInputs = document.querySelectorAll('.cost-amount');
-            return Array.from(costInputs).reduce((sum, input) => {
-                const value = parseFloat(input.value) || 0;
-                return sum + (value >= 0 ? value : 0);
-            }, 0);
+            const costInputs = document.querySelectorAll('.cost-input');
+            const costs = [];
+            costInputs.forEach(input => {
+                const label = input.querySelector('.cost-label').value || 'Unnamed Cost';
+                const amount = parseFloat(input.querySelector('.cost-amount').value) || 0;
+                if (amount > 0) {
+                    costs.push({ label, amount });
+                }
+            });
+            return costs;
         }
 
         function toggleDownPayment(mode) {
@@ -554,7 +584,8 @@
             let spReturn = Math.max(0, parseFloat(spReturnInput.value) / 100 || 0.07);
 
             const additionalCosts = getAdditionalCosts();
-            const totalLoanPrice = loanPrice + additionalCosts;
+            const totalAdditionalCosts = additionalCosts.reduce((sum, cost) => sum + cost.amount, 0);
+            const totalLoanPrice = loanPrice + totalAdditionalCosts;
 
             // Handle down payment mode
             if (downPaymentMode === 'percent') {
@@ -574,7 +605,7 @@
                 const paymentFactor = (monthlyRate * Math.pow(1 + monthlyRate, loanTerm)) /
                     (Math.pow(1 + monthlyRate, loanTerm) - 1);
                 financedAmount = desiredMonthlyPayment / paymentFactor;
-                loanPrice = financedAmount + downPayment - additionalCosts;
+                loanPrice = financedAmount + downPayment - totalAdditionalCosts;
                 if (!customLoanPriceSet) {
                     loanPriceInput.value = loanPrice.toFixed(2);
                 }
@@ -625,6 +656,20 @@
             loanTermInput.value = loanTerm;
             const totalPaid = monthlyPayment * loanTerm;
             const totalInterest = totalPaid - financedAmount;
+
+            // Monthly Payment Breakdown
+            const baseLoanAmount = loanPrice - downPayment;
+            const baseMetrics = calculateLoanMetrics(loanPrice, downPayment, apr, loanTerm);
+            const baseMonthlyPayment = baseMetrics.monthlyPayment;
+            const addonContributions = additionalCosts.map(cost => {
+                const addonMetrics = calculateLoanMetrics(cost.amount, 0, apr, loanTerm);
+                return { label: cost.label, amount: cost.amount, monthly: addonMetrics.monthlyPayment };
+            });
+
+            const initialInterest = financedAmount * monthlyRate;
+            const initialPrincipal = monthlyPayment - initialInterest;
+
+            updateMonthlyBreakdown(financedAmount, baseMonthlyPayment, addonContributions, monthlyPayment, initialInterest, initialPrincipal);
 
             // Down payment impact
             const baselineMetrics = calculateLoanMetrics(totalLoanPrice, 0, apr, loanTerm);
@@ -688,6 +733,50 @@
             idealEl.className = 'metric-value';
 
             updateCharts(financedAmount, totalInterest, investmentAmount, investmentGain, progressData, downPaymentData, aprData, termData, interestData);
+        }
+
+        function updateMonthlyBreakdown(financedAmount, baseMonthlyPayment, addonContributions, totalMonthlyPayment, initialInterest, initialPrincipal) {
+            const breakdownDiv = document.getElementById('monthlyBreakdown');
+            breakdownDiv.innerHTML = `
+                <div class="metric">
+                    <span class="metric-label">Total Financed Amount</span>
+                    <div class="metric-value tooltip">$${financedAmount.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,')}
+                        <span class="tooltiptext">Loan price minus down payment plus additional costs.</span>
+                    </div>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">Base Monthly Payment</span>
+                    <div class="metric-value base-payment tooltip">$${baseMonthlyPayment.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,')}
+                        <span class="tooltiptext">Payment for loan price minus down payment, excluding addons.</span>
+                    </div>
+                </div>
+                ${addonContributions.map(cost => `
+                    <div class="metric">
+                        <span class="metric-label">${cost.label}</span>
+                        <div class="metric-value addon tooltip">+$${cost.monthly.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,')}
+                            <span class="tooltiptext">Contribution of ${cost.label} ($${cost.amount.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,')}) to monthly payment.</span>
+                        </div>
+                    </div>
+                `).join('')}
+                <div class="metric">
+                    <span class="metric-label">Total Monthly Payment</span>
+                    <div class="metric-value total-payment tooltip">$${totalMonthlyPayment.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,')}
+                        <span class="tooltiptext">Sum of base payment and additional costs.</span>
+                    </div>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">Initial Interest Portion</span>
+                    <div class="metric-value initial-interest tooltip">$${initialInterest.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,')}
+                        <span class="tooltiptext">Interest portion in month 1; this decreases over time.</span>
+                    </div>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">Initial Principal Portion</span>
+                    <div class="metric-value initial-principal tooltip">$${initialPrincipal.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,')}
+                        <span class="tooltiptext">Principal portion in month 1; this increases over time.</span>
+                    </div>
+                </div>
+            `;
         }
 
         function calculateProgressData(financedAmount, monthlyPayment, monthlyRate, loanTerm, investmentAmount, spReturn) {
@@ -766,7 +855,7 @@
         function calculateAPRData(totalLoanPrice, downPayment, loanTerm) {
             const aprs = [];
             const payments = [];
-            for (let apr = 0.5; apr <= 10; apr += 0.5) { // Start at 0.5% to remove 0% APR
+            for (let apr = 0.5; apr <= 10; apr += 0.5) {
                 const monthlyRate = (apr / 100) / 12;
                 const financedAmount = totalLoanPrice - downPayment;
                 const monthlyPayment = financedAmount * (monthlyRate * Math.pow(1 + monthlyRate, loanTerm)) /
@@ -791,7 +880,6 @@
         }
 
         function calculateInterestData(totalLoanPrice, downPayment, apr, loanTerm) {
-            // Interest vs. Term (fixed APR)
             const terms = [12, 24, 36, 48, 60, 72, 84];
             const interestVsTerm = [];
             const monthlyRate = apr / 12;
@@ -804,7 +892,6 @@
                 interestVsTerm.push(totalInterest);
             }
 
-            // Interest vs. APR (fixed term)
             const aprs = [];
             const interestVsAPR = [];
             for (let aprPercent = 0.5; aprPercent <= 10; aprPercent += 0.5) {
