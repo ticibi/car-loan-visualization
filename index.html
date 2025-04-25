@@ -68,12 +68,13 @@
             border-radius: 12px;
             color: #e0e0e0;
             font-size: 1rem;
-            transition: box-shadow 0.2s;
+            transition: box-shadow 0.2s, transform 0.2s;
         }
 
         input:focus, select:focus {
             outline: none;
             box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.5);
+            transform: scale(1.02);
         }
 
         .downpayment-toggle, .investment-toggle {
@@ -116,6 +117,43 @@
             box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
         }
 
+        .additional-costs {
+            margin-top: 1.5rem;
+        }
+
+        .additional-costs h3 {
+            color: #ffffff;
+            font-size: 1.1rem;
+            margin-bottom: 1rem;
+        }
+
+        .cost-input {
+            display: grid;
+            grid-template-columns: 2fr 1fr 40px;
+            gap: 0.5rem;
+            margin-bottom: 0.75rem;
+            align-items: center;
+        }
+
+        .cost-input input {
+            width: 100%;
+        }
+
+        .add-cost-btn, .remove-cost-btn {
+            padding: 0.5rem;
+            background: rgba(50, 50, 50, 0.7);
+            border: none;
+            border-radius: 8px;
+            color: #e0e0e0;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: background 0.2s;
+        }
+
+        .add-cost-btn:hover, .remove-cost-btn:hover {
+            background: rgba(74, 144, 226, 0.7);
+        }
+
         .results-section {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -135,7 +173,7 @@
         }
 
         .card h2 {
-            margin-bottom: 1.5rem;
+            margin-bottom: 1rem;
             color: #ffffff;
             font-size: 1.25rem;
             font-weight: 600;
@@ -169,6 +207,14 @@
             font-size: 1.1rem;
             font-weight: 500;
             text-align: right;
+        }
+
+        .metric-value.down-payment {
+            color: #00f7ff;
+        }
+
+        .metric-value.interest-paid {
+            color: #e74c3c;
         }
 
         .metric-value.positive {
@@ -215,12 +261,29 @@
             padding: 1rem;
         }
 
+        .chart-legend {
+            text-align: center;
+            margin-bottom: 1rem;
+            font-size: 0.9rem;
+            color: #b0b0b0;
+        }
+
         @media (max-width: 768px) {
             .results-section {
                 grid-template-columns: 1fr;
             }
+            .cost-input {
+                grid-template-columns: 2fr 1fr;
+                grid-template-rows: auto auto;
+            }
+            .remove-cost-btn {
+                grid-column: 1 / 3;
+                justify-self: center;
+            }
         }
     </style>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
 </head>
 <body>
     <div class="container">
@@ -261,7 +324,7 @@
                 </div>
                 <div class="input-group">
                     <label for="investmentAmount">Investment Amount ($)</label>
-                    <input type="number" id="investmentAmount" value="40000" min="0" step="100">
+                    <input type="number" id="investmentAmount" value="4700.22" min="0" step="100">
                     <div class="investment-toggle">
                         <button class="active" onclick="toggleInvestmentGoal('interest')">Offset Interest</button>
                         <button onclick="toggleInvestmentGoal('car')">Pay Off Loan</button>
@@ -271,6 +334,11 @@
                     <label for="spReturn">S&P 500 Expected Return (%)</label>
                     <input type="number" id="spReturn" value="7" min="0" step="0.1">
                 </div>
+            </div>
+            <div class="additional-costs">
+                <h3>Additional Costs</h3>
+                <div id="costInputs"></div>
+                <button class="add-cost-btn" onclick="addCostInput()">+ Add Cost</button>
             </div>
             <button class="calculate" onclick="calculate()">Calculate</button>
         </div>
@@ -282,43 +350,43 @@
                     <div class="metric">
                         <span class="metric-label">Loan Price</span>
                         <div class="metric-value tooltip" id="resultLoanPrice">$50,000.00
-                            <span class="tooltiptext">The total price of the loan before any down payment.</span>
+                            <span class="tooltiptext">Total price of the loan before down payment, including additional costs.</span>
                         </div>
                     </div>
                     <div class="metric">
                         <span class="metric-label">Down Payment</span>
-                        <div class="metric-value tooltip" id="resultDownPayment">$10,000.00
-                            <span class="tooltiptext">The initial payment made towards the loan price.</span>
+                        <div class="metric-value down-payment tooltip" id="resultDownPayment">$10,000.00
+                            <span class="tooltiptext">Initial payment made towards the loan.</span>
                         </div>
                     </div>
                     <div class="metric">
                         <span class="metric-label">Financed Amount</span>
                         <div class="metric-value tooltip" id="resultFinanced">$40,000.00
-                            <span class="tooltiptext">The portion of the loan price that is financed through the loan.</span>
+                            <span class="tooltiptext">Portion of loan price financed.</span>
                         </div>
                     </div>
                     <div class="metric">
                         <span class="metric-label">Monthly Payment</span>
                         <div class="metric-value tooltip" id="resultMonthly">$653.52
-                            <span class="tooltiptext">The monthly payment amount for the loan.</span>
+                            <span class="tooltiptext">Monthly payment for the loan.</span>
                         </div>
                     </div>
                     <div class="metric">
                         <span class="metric-label">Total Interest Paid</span>
-                        <div class="metric-value tooltip" id="resultInterest">$7,053.11
-                            <span class="tooltiptext">The total interest paid over the life of the loan.</span>
+                        <div class="metric-value interest-paid tooltip" id="resultInterest">$7,053.44
+                            <span class="tooltiptext">Total interest paid over the loan term.</span>
                         </div>
                     </div>
                     <div class="metric">
-                        <span class="metric-label">Down Payment Impact</span>
-                        <div class="metric-value tooltip" id="resultDownPaymentImpact">$0.00
-                            <span class="tooltiptext">Savings from lower interest minus the opportunity cost of investing the down payment.</span>
+                        <span class="metric-label">Net Value Impact</span>
+                        <div class="metric-value tooltip" id="resultDownPaymentImpact">-$3,243.94
+                            <span class="tooltiptext">Interest savings minus opportunity cost of investing the down payment.</span>
                         </div>
                     </div>
                     <div class="metric">
                         <span class="metric-label">Ideal Down Payment</span>
                         <div class="metric-value tooltip" id="resultIdealDownPayment">$0.00
-                            <span class="tooltiptext">The down payment that maximizes cost-effectiveness, balancing interest savings and investment potential.</span>
+                            <span class="tooltiptext">Down payment maximizing cost-effectiveness with efficient monthly payment.</span>
                         </div>
                     </div>
                 </div>
@@ -329,43 +397,43 @@
                     <div class="metric">
                         <span class="metric-label">S&P 500 Return Rate</span>
                         <div class="metric-value tooltip" id="resultSPRate">7.00%
-                            <span class="tooltiptext">The expected annual return rate of the S&P 500 investment.</span>
+                            <span class="tooltiptext">Expected annual return of S&P 500.</span>
                         </div>
                     </div>
                     <div class="metric">
                         <span class="metric-label">Amount Invested</span>
-                        <div class="metric-value tooltip" id="resultInvested">$40,000.00
-                            <span class="tooltiptext">The initial amount invested in the S&P 500.</span>
+                        <div class="metric-value tooltip" id="resultInvested">$4,700.22
+                            <span class="tooltiptext">Initial amount invested in S&P 500.</span>
                         </div>
                     </div>
                     <div class="metric">
-                        <span class="metric-label">Investment Value After Term</span>
-                        <div class="metric-value tooltip" id="resultInvestment">$59,609.83
-                            <span class="tooltiptext">The value of the investment at the end of the loan term.</span>
+                        <span class="metric-label">Investment Value</span>
+                        <div class="metric-value tooltip" id="resultInvestment">$7,053.44
+                            <span class="tooltiptext">Value of investment at loan term end.</span>
                         </div>
                     </div>
                     <div class="metric">
                         <span class="metric-label">Investment Gain</span>
-                        <div class="metric-value tooltip" id="resultGain">$19,609.83
-                            <span class="tooltiptext">The profit from the investment after the loan term.</span>
+                        <div class="metric-value tooltip" id="resultGain">$2,353.22
+                            <span class="tooltiptext">Profit from investment.</span>
                         </div>
                     </div>
                     <div class="metric">
                         <span class="metric-label">Net Benefit of Financing</span>
-                        <div class="metric-value tooltip" id="resultBenefit">$12,556.72
-                            <span class="tooltiptext">Investment gain minus the total interest paid (or loan price if paying off loan).</span>
+                        <div class="metric-value tooltip" id="resultBenefit">$0.00
+                            <span class="tooltiptext">Investment gain minus interest paid.</span>
                         </div>
                     </div>
                     <div class="metric">
                         <span class="metric-label">Initial Investment to Offset</span>
-                        <div class="metric-value tooltip" id="resultOffsetInitial">$4,735.71
-                            <span class="tooltiptext">The initial amount needed to invest to offset the interest (or loan price).</span>
+                        <div class="metric-value tooltip" id="resultOffsetInitial">$4,700.22
+                            <span class="tooltiptext">Initial amount to offset interest.</span>
                         </div>
                     </div>
                     <div class="metric">
                         <span class="metric-label">Monthly Investment to Offset</span>
-                        <div class="metric-value tooltip" id="resultOffsetMonthly">$78.44
-                            <span class="tooltiptext">The monthly amount needed to invest to offset the interest (or loan price).</span>
+                        <div class="metric-value tooltip" id="resultOffsetMonthly">$77.82
+                            <span class="tooltiptext">Monthly amount to offset interest.</span>
                         </div>
                     </div>
                 </div>
@@ -380,7 +448,16 @@
             </div>
             <div class="card full-width">
                 <h2>Down Payment Trade-Off</h2>
+                <div class="chart-legend">Net Value Impact = Interest Savings - Opportunity Cost</div>
                 <canvas id="downPaymentChart"></canvas>
+            </div>
+            <div class="card full-width">
+                <h2>Monthly Payment vs. APR</h2>
+                <canvas id="aprChart"></canvas>
+            </div>
+            <div class="card full-width">
+                <h2>Monthly Payment vs. Loan Term</h2>
+                <canvas id="termChart"></canvas>
             </div>
             <div class="card full-width">
                 <h2>Loan Progress Over Time</h2>
@@ -389,14 +466,40 @@
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
-        let paymentChart, investmentChart, downPaymentChart, progressChart;
+        Chart.register(ChartDataLabels);
+
+        let paymentChart, investmentChart, downPaymentChart, aprChart, termChart, progressChart;
         let downPaymentMode = 'dollar';
         let investmentGoal = 'interest';
         let customInvestmentSet = false;
         let customMonthlyPaymentSet = false;
         let customLoanPriceSet = false;
+
+        function addCostInput(label = 'Cost', amount = 0) {
+            const costInputs = document.getElementById('costInputs');
+            const div = document.createElement('div');
+            div.className = 'cost-input';
+            div.innerHTML = `
+                <input type="text" class="cost-label" value="${label}" placeholder="Cost Name">
+                <input type="number" class="cost-amount" value="${amount}" min="0" step="10">
+                <button class="remove-cost-btn" onclick="removeCostInput(this)">–</button>
+            `;
+            costInputs.appendChild(div);
+        }
+
+        function removeCostInput(button) {
+            button.parentElement.remove();
+            calculate();
+        }
+
+        function getAdditionalCosts() {
+            const costInputs = document.querySelectorAll('.cost-amount');
+            return Array.from(costInputs).reduce((sum, input) => {
+                const value = parseFloat(input.value) || 0;
+                return sum + (value >= 0 ? value : 0);
+            }, 0);
+        }
 
         function toggleDownPayment(mode) {
             downPaymentMode = mode;
@@ -404,6 +507,7 @@
                 btn.classList.toggle('active', btn.textContent.includes(mode === 'dollar' ? 'Dollar' : 'Percent'));
             });
             const input = document.getElementById('downPayment');
+            const loanPrice = parseFloat(document.getElementById('loanPrice').value) || 50000;
             input.value = mode === 'dollar' ? '10000' : '20';
             calculate();
         }
@@ -413,15 +517,15 @@
             document.querySelectorAll('.investment-toggle button').forEach(btn => {
                 btn.classList.toggle('active', btn.textContent.includes(goal === 'interest' ? 'Interest' : 'Loan'));
             });
-            customInvestmentSet = false; // Reset custom investment when changing goal
+            customInvestmentSet = false;
             calculate();
         }
 
-        function calculateLoanMetrics(loanPrice, downPayment, apr, loanTerm) {
+        function calculateLoanMetrics(totalLoanPrice, downPayment, apr, loanTerm) {
             const monthlyRate = apr / 12;
-            const financedAmount = loanPrice - downPayment;
+            const financedAmount = Math.max(0, totalLoanPrice - downPayment);
             const monthlyPayment = financedAmount * (monthlyRate * Math.pow(1 + monthlyRate, loanTerm)) /
-                (Math.pow(1 + monthlyRate, loanTerm) - 1);
+                (Math.pow(1 + monthlyRate, loanTerm) - 1) || 0;
             const totalPaid = monthlyPayment * loanTerm;
             const totalInterest = totalPaid - financedAmount;
             return { financedAmount, monthlyPayment, totalInterest, totalPaid };
@@ -429,139 +533,129 @@
 
         function calculate() {
             const loanPriceInput = document.getElementById('loanPrice');
-            let loanPrice = parseFloat(loanPriceInput.value) || 0;
-            let downPayment = parseFloat(document.getElementById('downPayment').value) || 0;
-            const apr = parseFloat(document.getElementById('apr').value) / 100 || 0;
-            let loanTerm = parseInt(document.getElementById('loanTerm').value) || 72;
             const monthlyPaymentInput = document.getElementById('monthlyPayment');
-            let desiredMonthlyPayment = parseFloat(monthlyPaymentInput.value) || 0;
-            let investmentAmount = parseFloat(document.getElementById('investmentAmount').value) || 0;
-            const spReturn = parseFloat(document.getElementById('spReturn').value) / 100 || 0;
+            const downPaymentInput = document.getElementById('downPayment');
+            const aprInput = document.getElementById('apr');
+            const loanTermInput = document.getElementById('loanTerm');
+            const investmentInput = document.getElementById('investmentAmount');
+            const spReturnInput = document.getElementById('spReturn');
 
-            // Convert down payment if in percent
+            // Validate inputs
+            let loanPrice = Math.max(0, parseFloat(loanPriceInput.value) || 50000);
+            let downPaymentInputValue = Math.max(0, parseFloat(downPaymentInput.value) || 0);
+            let apr = Math.max(0, parseFloat(aprInput.value) / 100 || 0.055);
+            let loanTerm = Math.max(12, parseInt(loanTermInput.value) || 72);
+            let desiredMonthlyPayment = Math.max(0, parseFloat(monthlyPaymentInput.value) || 0);
+            let investmentAmount = Math.max(0, parseFloat(investmentInput.value) || 0);
+            let spReturn = Math.max(0, parseFloat(spReturnInput.value) / 100 || 0.07);
+
+            const additionalCosts = getAdditionalCosts();
+            const totalLoanPrice = loanPrice + additionalCosts;
+
+            // Handle down payment mode
             if (downPaymentMode === 'percent') {
-                downPayment = loanPrice * (downPayment / 100);
+                downPaymentInputValue = Math.min(downPaymentInputValue, 100);
+                downPaymentInputValue = totalLoanPrice * (downPaymentInputValue / 100);
             }
+            const downPayment = Math.min(downPaymentInputValue, totalLoanPrice);
+            downPaymentInput.value = downPayment.toFixed(2);
 
             // Loan calculations
             const monthlyRate = apr / 12;
-            let financedAmount = loanPrice - downPayment;
-
-            // Available loan terms
-            const availableTerms = [12, 24, 36, 48, 60, 72];
-
-            // Calculate monthly payment or adjust loan price/term
+            let financedAmount = totalLoanPrice - downPayment;
             let monthlyPayment;
+
+            // Handle loan price vs. monthly payment
             if (customMonthlyPaymentSet && desiredMonthlyPayment > 0) {
-                // Calculate financed amount needed for desired monthly payment
-                const paymentFactor = (monthlyRate * Math.pow(1 + monthlyRate, loanTerm)) / (Math.pow(1 + monthlyRate, loanTerm) - 1);
+                const paymentFactor = (monthlyRate * Math.pow(1 + monthlyRate, loanTerm)) /
+                    (Math.pow(1 + monthlyRate, loanTerm) - 1);
                 financedAmount = desiredMonthlyPayment / paymentFactor;
-                loanPrice = financedAmount + downPayment;
-                
-                // Update loan price input if not manually set
+                loanPrice = financedAmount + downPayment - additionalCosts;
                 if (!customLoanPriceSet) {
                     loanPriceInput.value = loanPrice.toFixed(2);
                 }
                 monthlyPayment = desiredMonthlyPayment;
-            } else if (customLoanPriceSet) {
-                // Calculate monthly payment based on loan price
-                monthlyPayment = financedAmount * (monthlyRate * Math.pow(1 + monthlyRate, loanTerm)) /
-                    (Math.pow(1 + monthlyRate, loanTerm) - 1);
-                
-                // Update monthly payment input if not manually set
+            } else {
+                const metrics = calculateLoanMetrics(totalLoanPrice, downPayment, apr, loanTerm);
+                financedAmount = metrics.financedAmount;
+                monthlyPayment = metrics.monthlyPayment;
                 if (!customMonthlyPaymentSet) {
                     monthlyPaymentInput.value = monthlyPayment.toFixed(2);
                 }
-            } else {
-                // Default: calculate monthly payment
-                monthlyPayment = financedAmount * (monthlyRate * Math.pow(1 + monthlyRate, loanTerm)) /
-                    (Math.pow(1 + monthlyRate, loanTerm) - 1);
-                monthlyPaymentInput.value = monthlyPayment.toFixed(2);
             }
 
-            // Handle loan term changes
-            if (!customMonthlyPaymentSet && desiredMonthlyPayment > 0) {
-                const termNumerator = Math.log(desiredMonthlyPayment / (desiredMonthlyPayment - financedAmount * monthlyRate));
-                const termDenominator = Math.log(1 + monthlyRate);
-                const calculatedTerm = Math.ceil(termNumerator / termDenominator);
-                loanTerm = availableTerms.reduce((prev, curr) => 
-                    Math.abs(curr - calculatedTerm) < Math.abs(prev - calculatedTerm) ? curr : prev
-                );
-            }
-
-            // Update inputs
-            monthlyPaymentInput.onchange = () => { 
-                customMonthlyPaymentSet = true; 
+            // Update input handlers
+            monthlyPaymentInput.onchange = () => {
+                customMonthlyPaymentSet = true;
                 customLoanPriceSet = false;
                 calculate();
             };
-            loanPriceInput.onchange = () => { 
-                customLoanPriceSet = true; 
+            loanPriceInput.onchange = () => {
+                customLoanPriceSet = true;
                 customMonthlyPaymentSet = false;
                 calculate();
             };
-            document.getElementById('loanTerm').onchange = () => {
+            loanTermInput.onchange = () => {
                 customMonthlyPaymentSet = false;
                 customLoanPriceSet = false;
                 calculate();
             };
-            document.getElementById('apr').onchange = () => {
+            aprInput.onchange = () => {
                 customMonthlyPaymentSet = false;
                 customLoanPriceSet = false;
                 calculate();
             };
-            document.getElementById('downPayment').onchange = () => {
+            downPaymentInput.onchange = () => {
                 customMonthlyPaymentSet = false;
                 customLoanPriceSet = false;
+                calculate();
+            };
+            investmentInput.onchange = () => {
+                customInvestmentSet = true;
+                calculate();
+            };
+            spReturnInput.onchange = () => {
                 calculate();
             };
 
-            // Update loan term select
-            document.getElementById('loanTerm').value = loanTerm;
-
+            loanTermInput.value = loanTerm;
             const totalPaid = monthlyPayment * loanTerm;
             const totalInterest = totalPaid - financedAmount;
 
-            // Down payment impact calculation
-            const baselineDownPayment = 0; // Compare against no down payment
-            const baselineMetrics = calculateLoanMetrics(loanPrice, baselineDownPayment, apr, loanTerm);
+            // Down payment impact
+            const baselineMetrics = calculateLoanMetrics(totalLoanPrice, 0, apr, loanTerm);
             const interestSavings = baselineMetrics.totalInterest - totalInterest;
-            const extraDownPayment = downPayment - baselineDownPayment;
-            const opportunityCost = extraDownPayment * Math.pow(1 + spReturn, loanTerm / 12) - extraDownPayment;
+            const opportunityCost = downPayment * (Math.pow(1 + spReturn, loanTerm / 12) - 1);
             const downPaymentImpact = interestSavings - opportunityCost;
 
-            // Update investment amount based on goal if not manually set
-            const investmentInput = document.getElementById('investmentAmount');
+            // Investment calculations
             if (!customInvestmentSet) {
-                investmentAmount = investmentGoal === 'interest' 
+                investmentAmount = investmentGoal === 'interest'
                     ? totalInterest / Math.pow(1 + spReturn, loanTerm / 12)
-                    : loanPrice / Math.pow(1 + spReturn, loanTerm / 12);
+                    : totalLoanPrice / Math.pow(1 + spReturn, loanTerm / 12);
                 investmentInput.value = investmentAmount.toFixed(2);
             }
 
-            // Mark investment as custom if manually edited
-            investmentInput.onchange = () => { customInvestmentSet = true; };
-
-            // Investment calculations
             const investmentValue = investmentAmount * Math.pow(1 + spReturn, loanTerm / 12);
             const investmentGain = investmentValue - investmentAmount;
-            const netBenefit = investmentGoal === 'interest' 
-                ? investmentGain - totalInterest 
-                : investmentGain - loanPrice;
+            const netBenefit = investmentGoal === 'interest'
+                ? investmentGain - totalInterest
+                : investmentGain - totalLoanPrice;
 
-            // Calculate investment needed to offset
-            const offsetTarget = investmentGoal === 'interest' ? totalInterest : loanPrice;
+            const offsetTarget = investmentGoal === 'interest' ? totalInterest : totalLoanPrice;
             const initialOffsetInvestment = offsetTarget / Math.pow(1 + spReturn, loanTerm / 12);
             const monthlyOffsetInvestment = offsetTarget / ((Math.pow(1 + spReturn / 12, loanTerm) - 1) / (spReturn / 12));
 
-            // Calculate progress data for line graph
+            // Progress and trade-off data
             const progressData = calculateProgressData(financedAmount, monthlyPayment, monthlyRate, loanTerm, investmentAmount, spReturn);
+            const downPaymentData = calculateDownPaymentTradeOff(totalLoanPrice, apr, loanTerm, spReturn, baselineMetrics);
 
-            // Calculate down payment trade-off data and ideal down payment
-            const downPaymentData = calculateDownPaymentTradeOff(loanPrice, apr, loanTerm, spReturn, baselineMetrics.totalInterest);
+            // APR and Term data
+            const aprData = calculateAPRData(totalLoanPrice, downPayment, loanTerm);
+            const termData = calculateTermData(totalLoanPrice, downPayment, apr);
 
             // Update results
-            document.getElementById('resultLoanPrice').textContent = `$${loanPrice.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,')}`;
+            document.getElementById('resultLoanPrice').textContent = `$${totalLoanPrice.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,')}`;
             document.getElementById('resultDownPayment').textContent = `$${downPayment.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,')}`;
             document.getElementById('resultFinanced').textContent = `$${financedAmount.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,')}`;
             document.getElementById('resultMonthly').textContent = `$${monthlyPayment.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,')}`;
@@ -571,8 +665,7 @@
             document.getElementById('resultInvestment').textContent = `$${investmentValue.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,')}`;
             document.getElementById('resultOffsetInitial').textContent = `$${initialOffsetInvestment.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,')}`;
             document.getElementById('resultOffsetMonthly').textContent = `$${monthlyOffsetInvestment.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,')}`;
-            
-            // Apply color classes for investment metrics
+
             const gainEl = document.getElementById('resultGain');
             gainEl.textContent = `$${investmentGain.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,')}`;
             gainEl.className = 'metric-value' + (investmentGain >= 0 ? ' positive' : ' negative');
@@ -589,8 +682,7 @@
             idealEl.textContent = `$${downPaymentData.idealDownPayment.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,')} (Monthly: $${downPaymentData.idealMonthlyPayment.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,')})`;
             idealEl.className = 'metric-value';
 
-            // Update charts
-            updateCharts(financedAmount, totalInterest, investmentAmount, investmentGain, progressData, downPaymentData);
+            updateCharts(financedAmount, totalInterest, investmentAmount, investmentGain, progressData, downPaymentData, aprData, termData);
         }
 
         function calculateProgressData(financedAmount, monthlyPayment, monthlyRate, loanTerm, investmentAmount, spReturn) {
@@ -604,8 +696,6 @@
 
             for (let month = 0; month <= loanTerm; month++) {
                 months.push(month);
-                
-                // Interest paid calculation
                 if (month > 0) {
                     const interestThisMonth = remainingBalance * monthlyRate;
                     totalInterestPaid += interestThisMonth;
@@ -614,56 +704,88 @@
                 }
                 interestPaid.push(totalInterestPaid);
                 principalRemaining.push(Math.max(0, remainingBalance));
-
-                // Investment growth
                 const investmentValue = investmentAmount * Math.pow(1 + spReturn, month / 12);
                 investmentValues.push(investmentValue);
-
                 if (remainingBalance <= 0) break;
             }
 
             return { months, interestPaid, principalRemaining, investmentValues };
         }
 
-        function calculateDownPaymentTradeOff(loanPrice, apr, loanTerm, spReturn, baselineInterest) {
+        function calculateDownPaymentTradeOff(totalLoanPrice, apr, loanTerm, spReturn, baselineMetrics) {
             const downPayments = [];
-            const totalCosts = [];
-            const investmentValues = [];
-            const monthlyPayments = [];
+            const interestPaid = [];
+            const opportunityCosts = [];
             const impacts = [];
-            const maxDownPayment = loanPrice * 0.5; // Up to 50% of loan price
-            const step = maxDownPayment / 5; // 6 data points
+            const monthlyPayments = [];
+            const maxDownPayment = totalLoanPrice * 0.5;
+            const step = maxDownPayment / 5;
+
+            const baselineMonthlyPayment = baselineMetrics.monthlyPayment;
+            const monthlyPaymentThreshold = baselineMonthlyPayment * 1.2; // Within 20% of baseline
+
+            let idealDownPayment = 0;
+            let idealMonthlyPayment = baselineMonthlyPayment;
+            let maxImpact = -Infinity;
 
             for (let dp = 0; dp <= maxDownPayment; dp += step) {
-                const metrics = calculateLoanMetrics(loanPrice, dp, apr, loanTerm);
+                const metrics = calculateLoanMetrics(totalLoanPrice, dp, apr, loanTerm);
                 downPayments.push(dp);
-                totalCosts.push(metrics.totalPaid);
+                interestPaid.push(metrics.totalInterest);
                 monthlyPayments.push(metrics.monthlyPayment);
-                const investmentValue = dp * Math.pow(1 + spReturn, loanTerm / 12);
-                investmentValues.push(investmentValue);
-                const interestSavings = baselineInterest - metrics.totalInterest;
-                const opportunityCost = investmentValue - dp;
+                const opportunityCost = dp * (Math.pow(1 + spReturn, loanTerm / 12) - 1);
+                opportunityCosts.push(opportunityCost);
+                const interestSavings = baselineMetrics.totalInterest - metrics.totalInterest;
                 const impact = interestSavings - opportunityCost;
                 impacts.push(impact);
+
+                // Ideal down payment: max impact with monthly payment <= threshold
+                if (impact > maxImpact && metrics.monthlyPayment <= monthlyPaymentThreshold) {
+                    maxImpact = impact;
+                    idealDownPayment = dp;
+                    idealMonthlyPayment = metrics.monthlyPayment;
+                }
             }
 
-            // Find ideal down payment (highest impact)
-            const idealIndex = impacts.indexOf(Math.max(...impacts));
-            const idealDownPayment = downPayments[idealIndex];
-            const idealMonthlyPayment = monthlyPayments[idealIndex];
-
-            return { 
-                downPayments, 
-                totalCosts, 
-                investmentValues, 
-                monthlyPayments, 
-                idealDownPayment, 
-                idealMonthlyPayment 
+            return {
+                downPayments,
+                interestPaid,
+                opportunityCosts,
+                impacts,
+                monthlyPayments,
+                idealDownPayment,
+                idealMonthlyPayment
             };
         }
 
-        function updateCharts(financedAmount, totalInterest, investmentAmount, investmentGain, progressData, downPaymentData) {
-            // Payment Breakdown Chart
+        function calculateAPRData(totalLoanPrice, downPayment, loanTerm) {
+            const aprs = [];
+            const payments = [];
+            for (let apr = 0; apr <= 10; apr += 0.5) {
+                const monthlyRate = (apr / 100) / 12;
+                const financedAmount = totalLoanPrice - downPayment;
+                const monthlyPayment = financedAmount * (monthlyRate * Math.pow(1 + monthlyRate, loanTerm)) /
+                    (Math.pow(1 + monthlyRate, loanTerm) - 1) || 0;
+                aprs.push(apr);
+                payments.push(monthlyPayment);
+            }
+            return { aprs, payments };
+        }
+
+        function calculateTermData(totalLoanPrice, downPayment, apr) {
+            const terms = [12, 24, 36, 48, 60, 72, 84];
+            const payments = [];
+            const monthlyRate = apr / 12;
+            const financedAmount = totalLoanPrice - downPayment;
+            for (let term of terms) {
+                const monthlyPayment = financedAmount * (monthlyRate * Math.pow(1 + monthlyRate, term)) /
+                    (Math.pow(1 + monthlyRate, term) - 1) || 0;
+                payments.push(monthlyPayment);
+            }
+            return { terms, payments };
+        }
+
+        function updateCharts(financedAmount, totalInterest, investmentAmount, investmentGain, progressData, downPaymentData, aprData, termData) {
             if (paymentChart) paymentChart.destroy();
             paymentChart = new Chart(document.getElementById('paymentChart'), {
                 type: 'pie',
@@ -680,14 +802,13 @@
                     responsive: true,
                     plugins: {
                         legend: {
-                            position: 'bottom',
+                            position: 'top',
                             labels: { color: '#e0e0e0' }
                         }
                     }
                 }
             });
 
-            // Investment vs Interest Chart
             if (investmentChart) investmentChart.destroy();
             investmentChart = new Chart(document.getElementById('investmentChart'), {
                 type: 'bar',
@@ -720,10 +841,7 @@
                 options: {
                     responsive: true,
                     plugins: {
-                        legend: { 
-                            position: 'bottom',
-                            labels: { color: '#e0e0e0' }
-                        },
+                        legend: { position: 'top', labels: { color: '#e0e0e0' } },
                     },
                     scales: {
                         y: {
@@ -741,70 +859,65 @@
                 }
             });
 
-            // Down Payment Trade-Off Chart
             if (downPaymentChart) downPaymentChart.destroy();
             downPaymentChart = new Chart(document.getElementById('downPaymentChart'), {
-                type: 'line',
+                type: 'bar',
                 data: {
                     labels: downPaymentData.downPayments.map(dp => `$${dp.toFixed(0).replace(/\d(?=(\d{3})+$)/g, '$&,')}`),
                     datasets: [
                         {
-                            label: 'Total Loan Cost',
-                            data: downPaymentData.totalCosts,
-                            borderColor: '#e74c3c',
+                            label: 'Interest Paid',
+                            data: downPaymentData.interestPaid,
                             backgroundColor: '#e74c3c',
-                            fill: false,
-                            tension: 0.1,
-                            yAxisID: 'y'
+                            borderColor: '#2a2a2a',
+                            borderWidth: 2
                         },
                         {
-                            label: 'Investment Value',
-                            data: downPaymentData.investmentValues,
-                            borderColor: '#2ecc71',
-                            backgroundColor: '#2ecc71',
-                            fill: false,
-                            tension: 0.1,
-                            yAxisID: 'y'
+                            label: 'Opportunity Cost',
+                            data: downPaymentData.opportunityCosts,
+                            backgroundColor: '#f39c12',
+                            borderColor: '#2a2a2a',
+                            borderWidth: 2
                         },
                         {
-                            label: 'Monthly Payment',
-                            data: downPaymentData.monthlyPayments,
-                            borderColor: '#4a90e2',
-                            backgroundColor: '#4a90e2',
-                            fill: false,
-                            tension: 0.1,
-                            yAxisID: 'y1'
+                            label: 'Net Value Impact',
+                            data: downPaymentData.impacts,
+                            backgroundColor: downPaymentData.impacts.map(impact => impact >= 0 ? '#2ecc71' : '#e74c3c'),
+                            borderColor: downPaymentData.downPayments.map((dp, i) => dp === downPaymentData.idealDownPayment ? '#00f7ff' : '#2a2a2a'),
+                            borderWidth: downPaymentData.downPayments.map((dp, i) => dp === downPaymentData.idealDownPayment ? 4 : 2)
                         }
                     ]
                 },
                 options: {
                     responsive: true,
                     plugins: {
-                        legend: {
-                            position: 'bottom',
-                            labels: { color: '#e0e0e0' }
-                        },
-                        annotation: {
-                            annotations: {
-                                line1: {
-                                    type: 'line',
-                                    xMin: downPaymentData.downPayments.indexOf(downPaymentData.idealDownPayment),
-                                    xMax: downPaymentData.downPayments.indexOf(downPaymentData.idealDownPayment),
-                                    borderColor: '#ffffff',
-                                    borderWidth: 2,
-                                    borderDash: [5, 5],
-                                    label: {
-                                        content: `Ideal: $${downPaymentData.idealDownPayment.toFixed(0).replace(/\d(?=(\d{3})+$)/g, '$&,')} (Monthly: $${downPaymentData.idealMonthlyPayment.toFixed(2)})`,
-                                        enabled: true,
-                                        position: 'top',
-                                        backgroundColor: 'rgba(50, 50, 50, 0.9)',
-                                        color: '#e0e0e0',
-                                        font: { size: 12 },
-                                        padding: 8,
-                                        borderRadius: 8
-                                    }
+                        legend: { position: 'top', labels: { color: '#e0e0e0' } },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const index = context.dataIndex;
+                                    const dp = downPaymentData.downPayments[index];
+                                    const monthly = downPaymentData.monthlyPayments[index];
+                                    const interest = downPaymentData.interestPaid[index];
+                                    const oppCost = downPaymentData.opportunityCosts[index];
+                                    const impact = downPaymentData.impacts[index];
+                                    return [
+                                        `Down Payment: $${dp.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,')}`,
+                                        `Monthly Payment: $${monthly.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,')}`,
+                                        `Interest Paid: $${interest.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,')}`,
+                                        `Opportunity Cost: $${oppCost.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,')}`,
+                                        `Net Value Impact: $${impact.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,')}`
+                                    ];
                                 }
                             }
+                        },
+                        datalabels: {
+                            display: context => context.dataset.label === 'Net Value Impact',
+                            formatter: (value) => `$${value.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,')}`,
+                            color: '#ffffff',
+                            font: { weight: 'bold' },
+                            anchor: 'end',
+                            align: 'top'
                         }
                     },
                     scales: {
@@ -812,36 +925,119 @@
                             beginAtZero: true,
                             grid: { color: '#3a3a3a' },
                             ticks: { color: '#e0e0e0' },
-                            title: {
-                                display: true,
-                                text: 'Cost / Investment ($)',
-                                color: '#e0e0e0'
-                            }
-                        },
-                        y1: {
-                            position: 'right',
-                            grid: { display: false },
-                            ticks: { color: '#4a90e2' },
-                            title: {
-                                display: true,
-                                text: 'Monthly Payment ($)',
-                                color: '#4a90e2'
-                            }
+                            title: { display: true, text: 'Amount ($)', color: '#e0e0e0' }
                         },
                         x: {
                             grid: { display: false },
                             ticks: { color: '#e0e0e0' },
-                            title: {
-                                display: true,
-                                text: 'Down Payment ($)',
-                                color: '#e0e0e0'
-                            }
+                            title: { display: true, text: 'Down Payment ($)', color: '#e0e0e0' }
                         }
                     }
                 }
             });
 
-            // Progress Over Time Chart
+            if (aprChart) aprChart.destroy();
+            aprChart = new Chart(document.getElementById('aprChart'), {
+                type: 'line',
+                data: {
+                    labels: aprData.aprs.map(apr => `${apr.toFixed(1)}%`),
+                    datasets: [{
+                        label: 'Monthly Payment',
+                        data: aprData.payments,
+                        borderColor: '#4a90e2',
+                        backgroundColor: '#4a90e2',
+                        pointBackgroundColor: aprData.aprs.map(apr => apr === parseFloat(document.getElementById('apr').value) ? '#00f7ff' : '#4a90e2'),
+                        pointBorderColor: aprData.aprs.map(apr => apr === parseFloat(document.getElementById('apr').value) ? '#00f7ff' : '#4a90e2'),
+                        pointRadius: aprData.aprs.map(apr => apr === parseFloat(document.getElementById('apr').value) ? 6 : 3),
+                        fill: false,
+                        tension: 0.1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { position: 'top', labels: { color: '#e0e0e0' } },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const index = context.dataIndex;
+                                    const apr = aprData.aprs[index];
+                                    const payment = aprData.payments[index];
+                                    return `APR: ${apr.toFixed(1)}%, Monthly Payment: $${payment.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,')}`;
+                                }
+                            }
+                        },
+                        datalabels: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: { color: '#3a3a3a' },
+                            ticks: { color: '#e0e0e0' },
+                            title: { display: true, text: 'Monthly Payment ($)', color: '#e0e0e0' }
+                        },
+                        x: {
+                            grid: { display: false },
+                            ticks: { color: '#e0e0e0' },
+                            title: { display: true, text: 'APR (%)', color: '#e0e0e0' }
+                        }
+                    }
+                }
+            });
+
+            if (termChart) termChart.destroy();
+            termChart = new Chart(document.getElementById('termChart'), {
+                type: 'line',
+                data: {
+                    labels: termData.terms.map(term => `${term} mo`),
+                    datasets: [{
+                        label: 'Monthly Payment',
+                        data: termData.payments,
+                        borderColor: '#4a90e2',
+                        backgroundColor: '#4a90e2',
+                        pointBackgroundColor: termData.terms.map(term => term === parseInt(document.getElementById('loanTerm').value) ? '#00f7ff' : '#4a90e2'),
+                        pointBorderColor: termData.terms.map(term => term === parseInt(document.getElementById('loanTerm').value) ? '#00f7ff' : '#4a90e2'),
+                        pointRadius: termData.terms.map(term => term === parseInt(document.getElementById('loanTerm').value) ? 6 : 3),
+                        fill: false,
+                        tension: 0.1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { position: 'top', labels: { color: '#e0e0e0' } },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const index = context.dataIndex;
+                                    const term = termData.terms[index];
+                                    const payment = termData.payments[index];
+                                    return `Term: ${term} months, Monthly Payment: $${payment.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,')}`;
+                                }
+                            }
+                        },
+                        datalabels: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: { color: '#3a3a3a' },
+                            ticks: { color: '#e0e0e0' },
+                            title: { display: true, text: 'Monthly Payment ($)', color: '#e0e0e0' }
+                        },
+                        x: {
+                            grid: { display: false },
+                            ticks: { color: '#e0e0e0' },
+                            title: { display: true, text: 'Loan Term (Months)', color: '#e0e0e0' }
+                        }
+                    }
+                }
+            });
+
             if (progressChart) progressChart.destroy();
             progressChart = new Chart(document.getElementById('progressChart'), {
                 type: 'line',
@@ -877,32 +1073,41 @@
                 options: {
                     responsive: true,
                     plugins: {
-                        legend: {
-                            position: 'bottom',
-                            labels: { color: '#e0e0e0' }
+                        legend: { position: 'top', labels: { color: '#e0e0e0' } },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const index = context.dataIndex;
+                                    const month = progressData.months[index];
+                                    const datasetLabel = context.dataset.label;
+                                    const value = context.raw;
+                                    return `${datasetLabel}: $${value.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,')} (Month ${month})`;
+                                }
+                            }
+                        },
+                        datalabels: {
+                            display: false
                         }
                     },
                     scales: {
                         y: {
                             beginAtZero: true,
                             grid: { color: '#3a3a3a' },
-                            ticks: { color: '#e0e0e0' }
+                            ticks: { color: '#e0e0e0' },
+                            title: { display: true, text: 'Amount ($)', color: '#e0e0e0' }
                         },
                         x: {
                             grid: { display: false },
                             ticks: { color: '#e0e0e0' },
-                            title: {
-                                display: true,
-                                text: 'Months',
-                                color: '#e0e0e0'
-                            }
+                            title: { display: true, text: 'Months', color: '#e0e0e0' }
                         }
                     }
                 }
             });
         }
 
-        // Initial calculation
+        // Initialize with one cost input
+        addCostInput('Taxes', 2000);
         calculate();
     </script>
 </body>
